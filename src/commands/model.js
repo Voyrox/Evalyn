@@ -1,5 +1,11 @@
-const { SlashCommandBuilder } = require("@discordjs/builders");
-const { EmbedBuilder, ButtonStyle, ButtonBuilder, ActionRowBuilder, ComponentType } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  ButtonStyle,
+  ButtonBuilder,
+  ActionRowBuilder,
+  ComponentType,
+} = require("discord.js");
 const Session = require("../NeuralNetwork/Session");
 
 module.exports = {

@@ -1,69 +1,56 @@
-const Discord = require("discord.js");
-const { Client, GatewayIntentBits, Partials } = require("discord.js");
-const { REST } = require('@discordjs/rest');
-const { readdirSync } = require("fs");
-const { Routes } = require('discord-api-types/v10');
 require("dotenv").config();
-const fs = require("fs");
-const Session = require("./src/NeuralNetwork/Session")
-const Dataset = JSON.parse(fs.readFileSync("./src/database/db.json")) || {};
 
+const path = require("path");
+const { REST } = require("@discordjs/rest");
+const { Routes } = require("discord-api-types/v10");
 
-Session.loadSentenceEncoder();
+const Session = require("./src/NeuralNetwork/Session");
+const { createClient } = require("./src/client");
+const { createContext } = require("./src/context");
+const { loadCommands } = require("./src/loaders/commands");
+const { loadEvents } = require("./src/loaders/events");
 
-const client = global.client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildPresences,
-        GatewayIntentBits.GuildMessageReactions,
-        GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.MessageContent
-    ],
-    partials: [Partials.Channel, Partials.Message, Partials.User, Partials.GuildMember, Partials.Reaction]
-});
-
-
-client.commands = new Discord.Collection()
-client.slashcommands = new Discord.Collection()
-client.commandaliases = new Discord.Collection()
-
-global.channel = Dataset.config?.channel || null;
-global.enabled = Dataset.config?.enabled || true;
-global.threads = Dataset.config?.threads || true;
-global.selflearning = Dataset.config?.selflearning || false;
-
-const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
-
-const slashcommands = [];
-readdirSync('./src/commands').forEach(async file => {
-  const command = await require(`./src/commands/${file}`);
-  slashcommands.push(command.data.toJSON());
-  client.slashcommands.set(command.data.name, command);
-});
-
-client.on("ready", async () => {
-  try {
-    await rest.put(
-      Routes.applicationCommands(client.user.id),
-      { body: slashcommands },
-    );
-    console.log(`${client.user.username} Activated!`);
-  } catch (error) {
-    console.error('Error with the following command data:', JSON.stringify(slashcommands, null, 2));
-    console.error(error);
+async function main() {
+  if (!process.env.TOKEN) {
+    throw new Error("Missing env var TOKEN (set it in .env)");
   }
-});
 
-readdirSync('./src/events').forEach(async file => {
-  const event = await require(`./src/events/${file}`);
-  if (event.once) {
-    client.once(event.name, (...args) => event.execute(...args));
-  } else {
-    client.on(event.name, (...args) => event.execute(...args));
-  }
-});
+  console.log("Loading sentence encoder...");
+  console.time("sentence-encoder");
+  await Session.loadSentenceEncoder();
+  console.timeEnd("sentence-encoder");
 
-client.login(process.env.TOKEN).catch(e => {
-    console.log(e)
+  const ctx = createContext();
+
+  const client = createClient();
+  client.ctx = ctx;
+
+  const commandsDir = path.join(__dirname, "src", "commands");
+  const eventsDir = path.join(__dirname, "src", "events");
+
+  const slashcommands = loadCommands(client, commandsDir, ctx);
+  loadEvents(client, eventsDir, ctx);
+
+  const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+  client.once("ready", async () => {
+    try {
+      await rest.put(Routes.applicationCommands(client.user.id), {
+        body: slashcommands,
+      });
+      console.log(`${client.user.username} Activated!`);
+    } catch (error) {
+      console.error(
+        "Failed to register application commands:",
+        JSON.stringify(slashcommands, null, 2)
+      );
+      console.error(error);
+    }
+  });
+
+  await client.login(process.env.TOKEN);
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
 });

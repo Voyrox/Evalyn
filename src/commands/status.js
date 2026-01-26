@@ -1,6 +1,5 @@
-const { SlashCommandBuilder } = require("@discordjs/builders");
-const { EmbedBuilder } = require("discord.js");
-const tf = require('@tensorflow/tfjs-node');
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const Session = require("../NeuralNetwork/Session");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -13,7 +12,14 @@ module.exports = {
     const model = await Session.getModel();
     const weights = model.getWeights();
     const weightShapes = weights.map(w => w.shape.join(" x ")).join(", ");
-    const layerDetails = model.layers.map(layer => `${layer.name}: ${layer.outputShape.join(' x ')}`).join("\n");
+    const layerDetails = model.layers
+      .map((layer) => {
+        const shape = Array.isArray(layer.outputShape)
+          ? layer.outputShape.join(" x ")
+          : String(layer.outputShape);
+        return `${layer.name}: ${shape}`;
+      })
+      .join("\n");
 
     const truncatedLayerDetails = layerDetails.length > 1024 ? `${layerDetails.substring(0, 1020)}...` : layerDetails;
 

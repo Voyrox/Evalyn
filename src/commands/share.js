@@ -1,5 +1,10 @@
-const { SlashCommandBuilder } = require("@discordjs/builders");
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
+} = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -37,9 +42,19 @@ module.exports = {
         .setTitle("✔️ Export Successful!")
         .setDescription("Here's your export data: \n It expires in 48 hours!")
       await interaction.editReply({ embeds: [exportEmbed], components: [row] });
+      return;
     }
     
-    if (/(http(s?)):\/\//i.test(importdata)) {
+    if (typeof importdata === "string") {
+      if (!/(http(s?)):\/\//i.test(importdata)) {
+        const invalidImport = new EmbedBuilder()
+          .setColor(0xffc107)
+          .setTitle("⚠️ Invalid URL provided!")
+          .setDescription("Please provide a valid URL for import.");
+        await interaction.editReply({ embeds: [invalidImport] });
+        return;
+      }
+
       const importEmbed = new EmbedBuilder()
         .setColor(0xFFC107)
         .setTitle("⏳ Importing...")
@@ -54,13 +69,14 @@ module.exports = {
         await new Promise(resolve => setTimeout(resolve, 1000));
         await sentMessage.edit({ embeds: [importEmbed] });
       }
-    } else {
-      const InvalidInport = new EmbedBuilder()
-      .setColor(0xFFC107)
-      .setTitle("⚠️ Invalid URL provided!")
-      .setDescription("Please provide a valid url given")
-
-       await interaction.editReply({ embeds: [InvalidInport] });
+      return;
     }
+
+    const embed = new EmbedBuilder()
+      .setColor(0x0099ff)
+      .setTitle("Share")
+      .setDescription("Use the options: `export: true` to export, or `import: <url>` to import.");
+
+    await interaction.editReply({ embeds: [embed] });
   }
 };

@@ -1,4 +1,3 @@
-const tf = require("@tensorflow/tfjs-node");
 const Session = require("../src/NeuralNetwork/Session");
 const fs = require('fs');
 
@@ -11,6 +10,10 @@ async function Predict(text) {
   const predictionTensor = model.predict(xPredict);
   const highestIndex = predictionTensor.argMax(-1).dataSync()[0];
 
+  const probs = predictionTensor.dataSync();
+  const maxProb = typeof probs[highestIndex] === "number" ? probs[highestIndex] : 0;
+  const confidence = Number((maxProb * 100).toFixed(2));
+
   const types = Object.keys(Dataset);
   const predicted = types[highestIndex];
 
@@ -20,7 +23,8 @@ async function Predict(text) {
   return {
     predicted,
     response,
-    text
+    text,
+    confidence,
   };
 }
 
