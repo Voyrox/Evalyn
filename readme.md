@@ -1,6 +1,6 @@
-# DOCUMENTOR
+# Evalyn
 
-DOCUMENTOR is an AI-powered Discord bot designed for machine learning applications. It allows you to train, evaluate, and manage AI models directly within Discord. With a range of customizable settings, DOCUMENTOR aims to make AI accessible and functional for Discord communities.
+Evalyn is an AI-powered Discord bot designed for machine learning applications. It allows you to train, evaluate, and manage AI models directly within Discord. With a range of customizable settings, DOCUMENTOR aims to make AI accessible and functional for Discord communities.
 
 ## Features
 
